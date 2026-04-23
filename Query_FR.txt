@@ -68,8 +68,8 @@
                     CONCAT(STR(?standLabel), ": ", STR(?titel)),
 
                     IF(?stand = <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/7>,
-                        CONCAT("Deposee: ", STR(?titel)),
-                        CONCAT("Initiative populaire: ", STR(?titel))
+                        CONCAT("Initiative déposée: ", STR(?titel)),
+                        CONCAT("Volksinitiative: ", STR(?titel))
                     )
                     )
                     AS ?tickertext
@@ -89,143 +89,218 @@
                 SELECT ?date ?tickertext ?linkType ?linkParam
                 WHERE {
                 {
-                    SELECT ?date ?stand ?typGroup
+                    SELECT ?date ?stand ?typGroup ?eventKind
                         (COUNT(DISTINCT ?id) AS ?n)
                         (SAMPLE(?id) AS ?sampleId)
                         (SAMPLE(?titel) AS ?sampleTitel)
                         (SAMPLE(?standLabel) AS ?sampleStandLabel)
                     WHERE {
-                    <https://politics.ld.admin.ch/political-rights/referendum/1> <https://cube.link/observationSet> ?refObsSet .
-                    ?refObsSet <https://cube.link/observation> ?refObs .
+                    {
+                        SELECT ?id ?titel ?typGroup ?stand ?standLabel ?eventKind ?date
+                        WHERE {
+                        {
+                            # Normale Ereignisse mit Originaldatum
+                            <https://politics.ld.admin.ch/political-rights/referendum/1> <https://cube.link/observationSet> ?refObsSet .
+                            ?refObsSet <https://cube.link/observation> ?refObs .
 
-                    ?refObs <https://politics.ld.admin.ch/political-rights/referendum/id> ?id .
-                    ?refObs <https://politics.ld.admin.ch/political-rights/referendum/titel> ?titelNode .
-                    ?refObs <https://politics.ld.admin.ch/political-rights/referendum/typ> ?typ .
-                    
-                    # Eidg. Volksinitiativen sind auch Obl. Referenden (weglassen, sonst doppelt)
-                    FILTER(
-                        ?typ != <https://politics.ld.admin.ch/political-rights/referendum/typ/9> &&
-                        ?typ != <https://politics.ld.admin.ch/political-rights/referendum/typ/10>
-                    )
-                    ?refObs <https://politics.ld.admin.ch/political-rights/referendum/region> <https://ld.admin.ch/country/CHE> .
+                            ?refObs <https://politics.ld.admin.ch/political-rights/referendum/id> ?id .
+                            ?refObs <https://politics.ld.admin.ch/political-rights/referendum/titel> ?titelNode .
+                            ?refObs <https://politics.ld.admin.ch/political-rights/referendum/typ> ?typ .
 
-                    ?titelNode schema:name ?titel .
-                    FILTER(LANG(?titel) = "fr")
+                            # Eidg. Volksinitiativen sind auch Obl. Referenden (weglassen, sonst doppelt)
+                            FILTER(
+                                ?typ != <https://politics.ld.admin.ch/political-rights/referendum/typ/9> &&
+                                ?typ != <https://politics.ld.admin.ch/political-rights/referendum/typ/10>
+                            )
 
-                    VALUES (?typ ?typGroup) {
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/16> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/17> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/18> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/19> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/20> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/21> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/22> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/23> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/25> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/26> "fak")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/27> "fak")
+                            ?refObs <https://politics.ld.admin.ch/political-rights/referendum/region> <https://ld.admin.ch/country/CHE> .
 
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/7> "obl")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/8> "obl")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/9> "obl")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/10> "obl")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/11> "obl")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/13> "obl")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/14> "obl")
-                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/15> "obl")
+                            ?titelNode schema:name ?titel .
+                            FILTER(LANG(?titel) = "fr")
+
+                            VALUES (?typ ?typGroup) {
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/16> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/17> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/18> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/19> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/20> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/21> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/22> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/23> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/25> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/26> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/27> "fak")
+
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/7> "obl")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/8> "obl")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/9> "obl")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/10> "obl")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/11> "obl")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/13> "obl")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/14> "obl")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/15> "obl")
+                            }
+
+                            <https://politics.ld.admin.ch/political-rights/referendum-stat/1> <https://cube.link/observationSet> ?statObsSet .
+                            ?statObsSet <https://cube.link/observation> ?statObs .
+
+                            ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/id> ?id .
+                            ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/datum> ?rawDate .
+                            ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/stand> ?stand .
+
+                            OPTIONAL {
+                                ?stand schema:name ?standLabel .
+                                FILTER(LANG(?standLabel) = "fr")
+                            }
+
+                            VALUES ?stand {
+                                <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>
+                                <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7>
+                                <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/8>
+                                <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>
+                            }
+
+                            FILTER(
+                                (?typGroup = "fak" && ?stand IN (
+                                    <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7>,
+                                    <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/8>,
+                                    <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>
+                                ))
+                                ||
+                                (?typGroup = "obl" && ?stand IN (
+                                    <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>,
+                                    <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>
+                                ))
+                            )
+
+                            BIND(xsd:date(?rawDate) AS ?date)
+                            BIND(
+                                IF(
+                                    ?typGroup = "fak" && ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7>,
+                                    "ablauf",
+                                    "normal"
+                                ) AS ?eventKind
+                            )
+                        }
+
+                        UNION
+
+                        {
+                            # Zusätzlicher synthetischer Eintrag: Beginn der Referendumsfrist
+                            <https://politics.ld.admin.ch/political-rights/referendum/1> <https://cube.link/observationSet> ?refObsSet .
+                            ?refObsSet <https://cube.link/observation> ?refObs .
+
+                            ?refObs <https://politics.ld.admin.ch/political-rights/referendum/id> ?id .
+                            ?refObs <https://politics.ld.admin.ch/political-rights/referendum/titel> ?titelNode .
+                            ?refObs <https://politics.ld.admin.ch/political-rights/referendum/typ> ?typ .
+
+                            FILTER(
+                                ?typ != <https://politics.ld.admin.ch/political-rights/referendum/typ/9> &&
+                                ?typ != <https://politics.ld.admin.ch/political-rights/referendum/typ/10>
+                            )
+
+                            ?refObs <https://politics.ld.admin.ch/political-rights/referendum/region> <https://ld.admin.ch/country/CHE> .
+
+                            ?titelNode schema:name ?titel .
+                            FILTER(LANG(?titel) = "fr")
+
+                            VALUES (?typ ?typGroup) {
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/16> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/17> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/18> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/19> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/20> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/21> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/22> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/23> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/25> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/26> "fak")
+                                (<https://politics.ld.admin.ch/political-rights/referendum/typ/27> "fak")
+                            }
+
+                            <https://politics.ld.admin.ch/political-rights/referendum-stat/1> <https://cube.link/observationSet> ?statObsSet .
+                            ?statObsSet <https://cube.link/observation> ?statObs .
+
+                            ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/id> ?id .
+                            ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/datum> ?rawDate .
+                            ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/stand> <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7> .
+
+                            OPTIONAL {
+                                <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7> schema:name ?standLabel .
+                                FILTER(LANG(?standLabel) = "fr")
+                            }
+
+                            BIND(<https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7> AS ?stand)
+                            BIND(xsd:date(?rawDate - "P100D"^^xsd:dayTimeDuration) AS ?date)
+                            BIND("beginn" AS ?eventKind)
+                        }
+                        }
                     }
-
-                    <https://politics.ld.admin.ch/political-rights/referendum-stat/1> <https://cube.link/observationSet> ?statObsSet .
-                    ?statObsSet <https://cube.link/observation> ?statObs .
-
-                    ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/id> ?id .
-                    ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/datum> ?date .
-                    ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/stand> ?stand .
-
-                    OPTIONAL {
-                        ?stand schema:name ?standLabel .
-                        FILTER(LANG(?standLabel) = "fr")
                     }
-
-                    VALUES ?stand {
-                        <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>
-                        <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7>
-                        <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/8>
-                        <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>
-                    }
-
-                    FILTER(
-                        ?typGroup = "fak"
-                        ||
-                        (
-                        ?typGroup = "obl"
-                        &&
-                        ?stand IN (
-                            <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>,
-                            <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>
-                        )
-                        )
-                    )
-                    }
-                    GROUP BY ?date ?stand ?typGroup
+                    GROUP BY ?date ?stand ?typGroup ?eventKind
                 }
 
                 BIND(
                     IF(
-                    ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>,
-                    IF(
-                        ?typGroup = "fak",
+                        ?eventKind = "beginn",
                         IF(
-                        ?n = 1,
-                        CONCAT("Nouvel arrete parlementaire soumis au referendum facultatif: ", STR(?sampleTitel)),
-                        CONCAT(STR(?n), " nouveaux arretes parlementaires soumis au referendum facultatif.")
-                        ),
-                        IF(
-                        ?n = 1,
-                        CONCAT("Nouvel arrete parlementaire soumis au referendum obligatoire: ", STR(?sampleTitel)),
-                        CONCAT(STR(?n), " nouveaux arretes parlementaires soumis au referendum obligatoire.")
-                        )
-                    ),
-
-                    IF(
-                        ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7>,
-                        IF(
-                        ?n = 1,
-                        CONCAT("Expiration du delai referendaire: ", STR(?sampleTitel)),
-                        CONCAT("Expiration du delai referendaire pour ", STR(?n), " actes")
+                            ?n = 1,
+                            CONCAT("Début du délai référendaire: ", STR(?sampleTitel)),
+                            CONCAT("Début du délai référendaire pour ", STR(?n), " actes")
                         ),
 
                         IF(
-                        ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/8>,
-                        CONCAT("Referendum depose: ", STR(?sampleTitel)),
+                            (?typGroup = "obl" && ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>),
+                            IF(
+                                ?n = 1,
+                                CONCAT("Arrêté fédéral soumis au référendum obligatoire: ", STR(?sampleTitel)),
+                                CONCAT(STR(?n), " arrêtés fédéraux soumis au référendum obligatoire")
+                            ),
 
-                        IF(
-                            ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>,
-                            CONCAT(STR(?sampleStandLabel), ": ", STR(?sampleTitel)),
-                            STR(?sampleTitel)
+                            IF(
+                                (?typGroup = "fak" && ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7>),
+                                IF(
+                                    ?n = 1,
+                                    CONCAT("Expiration du délai référendaire: ", STR(?sampleTitel)),
+                                    CONCAT("Expiration du délai référendaire de ", STR(?n), " actes")
+                                ),
+
+                                IF(
+                                    ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/8>,
+                                    CONCAT("Référendum déposé: ", STR(?sampleTitel)),
+
+                                    IF(
+                                        ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>,
+                                        CONCAT(STR(?sampleStandLabel), ": ", STR(?sampleTitel)),
+                                        STR(?sampleTitel)
+                                    )
+                                )
+                            )
                         )
-                        )
-                    )
                     ) AS ?tickertext
                 )
 
                 BIND(
                     IF(
-                    (?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5> && ?n > 1)
-                    ||
-                    (?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7> && ?n > 1),
-                    STR('referendum-list'),
-                    STR('referendum')
+                        (?eventKind = "beginn" && ?n > 1)
+                        ||
+                        ((?typGroup = "obl" && ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>) && ?n > 1)
+                        ||
+                        ((?typGroup = "fak" && ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7> && ?eventKind = "ablauf") && ?n > 1),
+                        STR('referendum-list'),
+                        STR('referendum')
                     ) AS ?linkType
                 )
 
                 BIND(
                     IF(
-                    (?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5> && ?n > 1)
-                    ||
-                    (?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7> && ?n > 1),
-                    STR(''),
-                    STR(?sampleId)
+                        (?eventKind = "beginn" && ?n > 1)
+                        ||
+                        ((?typGroup = "obl" && ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>) && ?n > 1)
+                        ||
+                        ((?typGroup = "fak" && ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7> && ?eventKind = "ablauf") && ?n > 1),
+                        STR(''),
+                        STR(?sampleId)
                     ) AS ?linkParam
                 )
                 }
@@ -257,7 +332,7 @@
 
                 BIND(
                     CONCAT(
-                    "Votation populaire federale (",
+                    "Votation populaire fédérale (",
                     STR(?n),
                     " ",
                     IF(?n = 1, "objet", "objets"),
@@ -296,22 +371,22 @@
 
                 BIND(
                     CONCAT(
-                    "Objets de votation pour le ",
+                    "Objets de la votation populaire du ",
                     STR(DAY(?votedate)), ". ",
                     IF(MONTH(?votedate)=1, "janvier",
-                    IF(MONTH(?votedate)=2, "fevrier",
+                    IF(MONTH(?votedate)=2, "février",
                     IF(MONTH(?votedate)=3, "mars",
                     IF(MONTH(?votedate)=4, "avril",
                     IF(MONTH(?votedate)=5, "mai",
                     IF(MONTH(?votedate)=6, "juin",
                     IF(MONTH(?votedate)=7, "juillet",
-                    IF(MONTH(?votedate)=8, "aout",
+                    IF(MONTH(?votedate)=8, "août",
                     IF(MONTH(?votedate)=9, "septembre",
                     IF(MONTH(?votedate)=10, "octobre",
-                    IF(MONTH(?votedate)=11, "novembre", "decembre"))))))))))),
+                    IF(MONTH(?votedate)=11, "novembre", "décembre"))))))))))),
                     " ",
                     STR(YEAR(?votedate)),
-                    " fixe"
+                    " fixés"
                     ) AS ?tickertext
                 )
 
@@ -356,12 +431,12 @@
                 BIND(
                     IF(?n = 1,
                     IF(?zustand = <https://politics.ld.admin.ch/political-rights/popular-initiative/zustandgekommen/ja>,
-                        CONCAT("Ayant abouti: ", STR(?titel)),
-                        CONCAT("N'ayant pas abouti: ", STR(?titel))
+                        CONCAT("Aboutissement de l'initiative: ", STR(?titel)),
+                        CONCAT("Non-aboutissement de l'initiative: ", STR(?titel))
                     ),
                     IF(?zustand = <https://politics.ld.admin.ch/political-rights/popular-initiative/zustandgekommen/ja>,
-                        "Initiatives populaires ayant abouti",
-                        "Initiatives populaires n'ayant pas abouti"
+                        "Aboutissement des initiatives",
+                        "Non-aboutissement des initiatives"
                     )
                     ) AS ?tickertext
                 )
@@ -407,12 +482,12 @@
                 BIND(
                     IF(?n = 1,
                     IF(?zustand = <https://politics.ld.admin.ch/political-rights/referendum/zustandegekommen/ja>,
-                        CONCAT("Referendum ayant abouti: ", STR(?titel)),
-                        CONCAT("Referendum n'ayant pas abouti: ", STR(?titel))
+                        CONCAT("Aboutissement du référendum: ", STR(?titel)),
+                        CONCAT("Non-aboutissement du référendum: ", STR(?titel))
                     ),
                     IF(?zustand = <https://politics.ld.admin.ch/political-rights/referendum/zustandegekommen/ja>,
-                        "Referendums ayant abouti",
-                        "Referendums n'ayant pas abouti"
+                        "Aboutissement des référendums",
+                        "Non-aboutissement des référendums"
                     )
                     ) AS ?tickertext
                 )
@@ -428,4 +503,3 @@
         }
         }
         ORDER BY DESC(?sortDate) ?tickertext
-    
