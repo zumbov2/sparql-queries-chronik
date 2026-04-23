@@ -1,0 +1,430 @@
+  	PREFIX schema: <http://schema.org/>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        SELECT DISTINCT ?date_fmt ?tickertext ?linkType ?linkParam
+        WHERE {
+        {
+            SELECT (SUBSTR(STR(xsd:date(?date)),1,10) AS ?date_fmt) ?tickertext ?linkType ?linkParam (SUBSTR(STR(xsd:date(?date)),1,10) AS ?sortDate)
+            WHERE {
+            BIND(xsd:date(NOW() - "P90D"^^xsd:dayTimeDuration) AS ?startDate)
+            BIND(xsd:date(NOW() + "P1D"^^xsd:dayTimeDuration) AS ?endDateExclusive)
+
+            ############################################################################
+            # 1) Geschäftsstände Volksinitiativen
+            ############################################################################
+            {
+                SELECT ?date ?tickertext ?linkType ?linkParam
+                WHERE {
+                <https://politics.ld.admin.ch/political-rights/popular-initiative/1> <https://cube.link/observationSet> ?refObsSet .
+                ?refObsSet <https://cube.link/observation> ?refObs .
+
+                ?refObs <https://politics.ld.admin.ch/political-rights/popular-initiative/id> ?id .
+                ?refObs <https://politics.ld.admin.ch/political-rights/popular-initiative/titel> ?titelNode .
+                ?refObs <https://politics.ld.admin.ch/political-rights/popular-initiative/region> <https://ld.admin.ch/country/CHE> .
+
+                ?titelNode schema:name ?titel .
+                FILTER(LANG(?titel) = "de")
+
+                <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/1> <https://cube.link/observationSet> ?statObsSet .
+                ?statObsSet <https://cube.link/observation> ?statObs .
+
+                ?statObs <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/id> ?id .
+                ?statObs <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/datum> ?date .
+                ?statObs <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand> ?stand .
+
+                VALUES ?stand {
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/2>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/7>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/10>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/15>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/17>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/30>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/18>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/19>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/20>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/21>
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/31>
+                }
+
+                OPTIONAL {
+                    ?stand schema:name ?standLabel .
+                    FILTER(LANG(?standLabel) = "de")
+                }
+
+                BIND(
+                    IF(
+                    ?stand IN (
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/2>,
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/10>,
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/15>,
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/17>,
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/30>,
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/18>,
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/19>,
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/20>,
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/21>,
+                        <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/31>
+                    ),
+                    CONCAT(STR(?standLabel), ": ", STR(?titel)),
+
+                    IF(?stand = <https://politics.ld.admin.ch/political-rights/popular-initiative-stat/stand/7>,
+                        CONCAT("Eingereicht: ", STR(?titel)),
+                        CONCAT("Volksinitiative: ", STR(?titel))
+                    )
+                    )
+                    AS ?tickertext
+                )
+
+                BIND(STR('popular-initiative') AS ?linkType)
+                BIND(STR(?id) AS ?linkParam)
+                }
+            }
+
+            UNION
+
+            ############################################################################
+            # 2) Geschäftsstände Referenden
+            ############################################################################
+            {
+                SELECT ?date ?tickertext ?linkType ?linkParam
+                WHERE {
+                {
+                    SELECT ?date ?stand ?typGroup
+                        (COUNT(DISTINCT ?id) AS ?n)
+                        (SAMPLE(?id) AS ?sampleId)
+                        (SAMPLE(?titel) AS ?sampleTitel)
+                        (SAMPLE(?standLabel) AS ?sampleStandLabel)
+                    WHERE {
+                    <https://politics.ld.admin.ch/political-rights/referendum/1> <https://cube.link/observationSet> ?refObsSet .
+                    ?refObsSet <https://cube.link/observation> ?refObs .
+
+                    ?refObs <https://politics.ld.admin.ch/political-rights/referendum/id> ?id .
+                    ?refObs <https://politics.ld.admin.ch/political-rights/referendum/titel> ?titelNode .
+                    ?refObs <https://politics.ld.admin.ch/political-rights/referendum/typ> ?typ .
+                    
+                    # Eidg. Volksinitiativen sind auch Obl. Referenden (weglassen, sonst doppelt)
+                    FILTER(
+                        ?typ != <https://politics.ld.admin.ch/political-rights/referendum/typ/9> &&
+                        ?typ != <https://politics.ld.admin.ch/political-rights/referendum/typ/10>
+                    )
+                    ?refObs <https://politics.ld.admin.ch/political-rights/referendum/region> <https://ld.admin.ch/country/CHE> .
+
+                    ?titelNode schema:name ?titel .
+                    FILTER(LANG(?titel) = "de")
+
+                    VALUES (?typ ?typGroup) {
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/16> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/17> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/18> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/19> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/20> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/21> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/22> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/23> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/25> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/26> "fak")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/27> "fak")
+
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/7> "obl")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/8> "obl")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/9> "obl")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/10> "obl")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/11> "obl")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/13> "obl")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/14> "obl")
+                        (<https://politics.ld.admin.ch/political-rights/referendum/typ/15> "obl")
+                    }
+
+                    <https://politics.ld.admin.ch/political-rights/referendum-stat/1> <https://cube.link/observationSet> ?statObsSet .
+                    ?statObsSet <https://cube.link/observation> ?statObs .
+
+                    ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/id> ?id .
+                    ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/datum> ?date .
+                    ?statObs <https://politics.ld.admin.ch/political-rights/referendum-stat/stand> ?stand .
+
+                    OPTIONAL {
+                        ?stand schema:name ?standLabel .
+                        FILTER(LANG(?standLabel) = "de")
+                    }
+
+                    VALUES ?stand {
+                        <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>
+                        <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7>
+                        <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/8>
+                        <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>
+                    }
+
+                    FILTER(
+                        ?typGroup = "fak"
+                        ||
+                        (
+                        ?typGroup = "obl"
+                        &&
+                        ?stand IN (
+                            <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>,
+                            <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>
+                        )
+                        )
+                    )
+                    }
+                    GROUP BY ?date ?stand ?typGroup
+                }
+
+                BIND(
+                    IF(
+                    ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5>,
+                    IF(
+                        ?typGroup = "fak",
+                        IF(
+                        ?n = 1,
+                        CONCAT("Neuer Parlamentsbeschluss, der dem fakultativen Referendum unterstellt ist: ", STR(?sampleTitel)),
+                        CONCAT(STR(?n), " neue Parlamentsbeschlüsse, die dem fakultativen Referendum unterstellt sind.")
+                        ),
+                        IF(
+                        ?n = 1,
+                        CONCAT("Neuer Parlamentsbeschluss, der dem obligatorischen Referendum untersteht: ", STR(?sampleTitel)),
+                        CONCAT(STR(?n), " neue Parlamentsbeschlüsse, die dem obligatorischen Referendum unterstellt sind.")
+                        )
+                    ),
+
+                    IF(
+                        ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7>,
+                        IF(
+                        ?n = 1,
+                        CONCAT("Ablauf der Referendumsfrist: ", STR(?sampleTitel)),
+                        CONCAT("Ablauf der Referendumsfrist von ", STR(?n), " Erlassen")
+                        ),
+
+                        IF(
+                        ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/8>,
+                        CONCAT("Referendum eingereicht: ", STR(?sampleTitel)),
+
+                        IF(
+                            ?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/18>,
+                            CONCAT(STR(?sampleStandLabel), ": ", STR(?sampleTitel)),
+                            STR(?sampleTitel)
+                        )
+                        )
+                    )
+                    ) AS ?tickertext
+                )
+
+                BIND(
+                    IF(
+                    (?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5> && ?n > 1)
+                    ||
+                    (?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7> && ?n > 1),
+                    STR('referendum-list'),
+                    STR('referendum')
+                    ) AS ?linkType
+                )
+
+                BIND(
+                    IF(
+                    (?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/5> && ?n > 1)
+                    ||
+                    (?stand = <https://politics.ld.admin.ch/political-rights/referendum-stat/stand/7> && ?n > 1),
+                    STR(''),
+                    STR(?sampleId)
+                    ) AS ?linkParam
+                )
+                }
+            }
+
+            UNION
+
+            ############################################################################
+            # 3) Abstimmungen
+            ############################################################################
+            {
+                SELECT ?date ?tickertext ?linkType ?linkParam
+                WHERE {
+                {
+                    SELECT ?date (COUNT(DISTINCT ?id) AS ?n)
+                    WHERE {
+                    <https://politics.ld.admin.ch/political-rights/popular-vote/1> <https://cube.link/observationSet> ?refObsSet .
+                    ?refObsSet <https://cube.link/observation> ?refObs .
+
+                    ?refObs <https://politics.ld.admin.ch/political-rights/popular-vote/id> ?id .
+                    ?refObs <https://politics.ld.admin.ch/political-rights/popular-vote/date> ?date .
+                    ?refObs <https://politics.ld.admin.ch/political-rights/popular-vote/abstimmungstitel> ?voteTitle .
+                    ?refObs <https://politics.ld.admin.ch/political-rights/popular-vote/region> <https://ld.admin.ch/country/CHE> .
+
+                    FILTER(?voteTitle != <https://politics.ld.admin.ch/political-rights/popular-vote/abstimmungstitel/stichfrage>)
+                    }
+                    GROUP BY ?date
+                }
+
+                BIND(
+                    CONCAT(
+                    "Eidgenössische Volksabstimmung (",
+                    STR(?n),
+                    " ",
+                    IF(?n = 1, "Vorlage", "Vorlagen"),
+                    ")"
+                    ) AS ?tickertext
+                )
+
+                BIND(STR('voting-sunday') AS ?linkType)
+                BIND(STR(?date) AS ?linkParam)
+                }
+            }
+
+            UNION
+
+            ############################################################################
+            # 4) Medienmitteilungen Abstimmungen
+            ############################################################################
+            {
+                SELECT ?date ?tickertext ?linkType ?linkParam
+                WHERE {
+                {
+                    SELECT ?id (MAX(?mmDate) AS ?date) (SAMPLE(?voteDate) AS ?votedate)
+                    WHERE {
+                    <https://politics.ld.admin.ch/political-rights/popular-vote/1> <https://cube.link/observationSet> ?obsSet .
+                    ?obsSet <https://cube.link/observation> ?obs .
+
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-vote/mmId> ?id .
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-vote/mmDate> ?mmDate .
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-vote/date> ?voteDate .
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-vote/region> <https://ld.admin.ch/country/CHE> .
+
+                    FILTER(STRLEN(STR(?id)) > 0 && STRLEN(STR(?mmDate)) > 0)
+                    }
+                    GROUP BY ?id
+                }
+
+                BIND(
+                    CONCAT(
+                    "Abstimmungsvorlagen für den ",
+                    STR(DAY(?votedate)), ". ",
+                    IF(MONTH(?votedate)=1, "Januar",
+                    IF(MONTH(?votedate)=2, "Februar",
+                    IF(MONTH(?votedate)=3, "März",
+                    IF(MONTH(?votedate)=4, "April",
+                    IF(MONTH(?votedate)=5, "Mai",
+                    IF(MONTH(?votedate)=6, "Juni",
+                    IF(MONTH(?votedate)=7, "Juli",
+                    IF(MONTH(?votedate)=8, "August",
+                    IF(MONTH(?votedate)=9, "September",
+                    IF(MONTH(?votedate)=10, "Oktober",
+                    IF(MONTH(?votedate)=11, "November", "Dezember"))))))))))),
+                    " ",
+                    STR(YEAR(?votedate)),
+                    " festgelegt"
+                    ) AS ?tickertext
+                )
+
+                BIND(STR('news') AS ?linkType)
+                BIND(STR(?id) AS ?linkParam)
+                }
+            }
+
+            UNION
+
+            ############################################################################
+            # 5) Medienmitteilungen Volksinitiativen
+            ############################################################################
+            {
+                SELECT ?date ?tickertext ?linkType ?linkParam
+                WHERE {
+                {
+                    SELECT ?id
+                        (MAX(?mmDate) AS ?date)
+                        (SAMPLE(?zust) AS ?zustand)
+                        (COUNT(DISTINCT ?itemId) AS ?n)
+                        (SAMPLE(?titelDe) AS ?titel)
+                    WHERE {
+                    <https://politics.ld.admin.ch/political-rights/popular-initiative/1> <https://cube.link/observationSet> ?obsSet .
+                    ?obsSet <https://cube.link/observation> ?obs .
+
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-initiative/mmId> ?id .
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-initiative/mmDate> ?mmDate .
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-initiative/id> ?itemId .
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-initiative/zustandgekommen> ?zust .
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-initiative/titel> ?titelNode .
+                    ?obs <https://politics.ld.admin.ch/political-rights/popular-initiative/region> <https://ld.admin.ch/country/CHE> .
+
+                    ?titelNode schema:name ?titelDe .
+                    FILTER(LANG(?titelDe) = "de")
+
+                    FILTER(STRLEN(STR(?id)) > 0 && STRLEN(STR(?mmDate)) > 0)
+                    }
+                    GROUP BY ?id
+                }
+
+                BIND(
+                    IF(?n = 1,
+                    IF(?zustand = <https://politics.ld.admin.ch/political-rights/popular-initiative/zustandgekommen/ja>,
+                        CONCAT("Zustande gekommen: ", STR(?titel)),
+                        CONCAT("Nicht zustande gekommen: ", STR(?titel))
+                    ),
+                    IF(?zustand = <https://politics.ld.admin.ch/political-rights/popular-initiative/zustandgekommen/ja>,
+                        "Volksinitiativen zustande gekommen",
+                        "Volksinitiativen nicht zustande gekommen"
+                    )
+                    ) AS ?tickertext
+                )
+
+                BIND(STR('news') AS ?linkType)
+                BIND(STR(?id) AS ?linkParam)
+                }
+            }
+
+            UNION
+
+            ############################################################################
+            # 6) Medienmitteilungen Referenden
+            ############################################################################
+            {
+                SELECT ?date ?tickertext ?linkType ?linkParam
+                WHERE {
+                {
+                    SELECT ?id
+                        (MAX(?mmDate) AS ?date)
+                        (SAMPLE(?zust) AS ?zustand)
+                        (COUNT(DISTINCT ?itemId) AS ?n)
+                        (SAMPLE(?titelDe) AS ?titel)
+                    WHERE {
+                    <https://politics.ld.admin.ch/political-rights/referendum/1> <https://cube.link/observationSet> ?obsSet .
+                    ?obsSet <https://cube.link/observation> ?obs .
+
+                    ?obs <https://politics.ld.admin.ch/political-rights/referendum/mmId> ?id .
+                    ?obs <https://politics.ld.admin.ch/political-rights/referendum/mmDate> ?mmDate .
+                    ?obs <https://politics.ld.admin.ch/political-rights/referendum/id> ?itemId .
+                    ?obs <https://politics.ld.admin.ch/political-rights/referendum/zustandegekommen> ?zust .
+                    ?obs <https://politics.ld.admin.ch/political-rights/referendum/titel> ?titelNode .
+                    ?obs <https://politics.ld.admin.ch/political-rights/referendum/region> <https://ld.admin.ch/country/CHE> .
+
+                    ?titelNode schema:name ?titelDe .
+                    FILTER(LANG(?titelDe) = "de")
+
+                    FILTER(STRLEN(STR(?id)) > 0 && STRLEN(STR(?mmDate)) > 0)
+                    }
+                    GROUP BY ?id
+                }
+
+                BIND(
+                    IF(?n = 1,
+                    IF(?zustand = <https://politics.ld.admin.ch/political-rights/referendum/zustandegekommen/ja>,
+                        CONCAT("Referendum zustande gekommen: ", STR(?titel)),
+                        CONCAT("Referendum nicht zustande gekommen: ", STR(?titel))
+                    ),
+                    IF(?zustand = <https://politics.ld.admin.ch/political-rights/referendum/zustandegekommen/ja>,
+                        "Referenden zustande gekommen",
+                        "Referenden nicht zustande gekommen"
+                    )
+                    ) AS ?tickertext
+                )
+
+                BIND(STR('news') AS ?linkType)
+                BIND(STR(?id) AS ?linkParam)
+                }
+            }
+
+            FILTER(xsd:date(?date) >= ?startDate)
+            FILTER(xsd:date(?date) < ?endDateExclusive)
+            }
+        }
+        }
+        ORDER BY DESC(?sortDate) ?tickertext
